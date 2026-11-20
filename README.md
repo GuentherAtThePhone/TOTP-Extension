@@ -54,7 +54,7 @@ npm test
 
 The extenison is local only. No syncing is planned nor wanted.
 
-There will never be telemetrics be collected by the extension itself. (However the store it was installed from might collect data. Therefore, please see the stores terms.)
+Telemetry will never be collected by the extension itself. (However the store it was installed from might collect data. Therefore, please see the stores terms.)
 
 The extension is as minimalistic as possible, while also providing all necessary functions.
 
