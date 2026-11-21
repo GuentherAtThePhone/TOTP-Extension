@@ -11,6 +11,18 @@
   "enterManualButtonText":{
     "message": "enter manually"
   },
+  "enterUrlButtonText":{
+    "message": "Enter URL"
+  },
+  "enterOtpAuthUrlText":{
+    "message": "Enter an otpauth URL"
+  },
+  "addUrlAccountText":{
+    "message": "Add Account"
+  },
+  "invalidOtpAuthUrlText":{
+    "message": "Invalid otpauth URL. Please check the value."
+  },
   "newAccountText":{
     "message": "New Account"
   }, 

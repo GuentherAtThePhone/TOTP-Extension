@@ -21,7 +21,15 @@
         <div id="addAccountView" style="display:none;">
 
             <button id="importBtn" data-i18n="importBtnText"></button>
+            <button id="urlEntry" data-i18n="enterUrlButtonText"></button>
             <button id="manualEntry" data-i18n="enterManualButtonText"></button>
+        </div>
+
+        <div id="urlEntryView" style="display:none;">
+            <h3 data-i18n="enterOtpAuthUrlText"></h3>
+            <input id="otpAuthUrlInput" type="url" placeholder="otpauth://totp/..." />
+            <button id="addUrlAccount" data-i18n="addUrlAccountText"></button>
+            <button id="cancelUrlAdd" data-i18n="cancelBtnText"></button>
         </div>
 
         <div id="manualEntryView" style="display:none;">

@@ -8,6 +8,11 @@ const exportAccountsBtn = document.getElementById("exportAccounts");
 const addAccountView = document.getElementById("addAccountView");
 const importBtn = document.getElementById("importBtn");
 const importManualBtn = document.getElementById("manualEntry");
+const importUrlBtn = document.getElementById("urlEntry");
+const urlEntryView = document.getElementById("urlEntryView");
+const otpAuthUrlInput = document.getElementById("otpAuthUrlInput");
+const addUrlAccountBtn = document.getElementById("addUrlAccount");
+const cancelUrlAddBtn = document.getElementById("cancelUrlAdd");
 
 const manualEntryView = document.getElementById("manualEntryView");
 const nameInput = document.getElementById("nameInput");
@@ -80,6 +85,32 @@ importBtn.addEventListener("click", () => {
 });
 
 importManualBtn.addEventListener("click", () => showAddView());
+
+importUrlBtn.addEventListener("click", () => {
+  accountsView.style.display = "none";
+  addAccountView.style.display = "none";
+  urlEntryView.style.display = "block";
+  manualEntryView.style.display = "none";
+  passwordEntryView.style.display = "none";
+  otpAuthUrlInput.value = "";
+  otpAuthUrlInput.focus();
+});
+
+addUrlAccountBtn.addEventListener("click", async () => {
+  const account = await parseOtpauth(otpAuthUrlInput.value.trim());
+  if (!account) {
+    alert(browser.i18n.getMessage("invalidOtpAuthUrlText"));
+    return;
+  }
+
+  accounts.push(account);
+  await saveAccounts(accounts, password);
+  browser.storage.local.remove("uiState");
+  showAccountsView();
+  renderAccounts();
+});
+
+cancelUrlAddBtn.addEventListener("click", showAccountsView);
 
 toggleSecretBtn.addEventListener("click", () => {
   if (secretInput.type === "password") {
@@ -179,6 +210,7 @@ async function setPassword() {
 function showAddOptions() {
   accountsView.style.display = "none";
   addAccountView.style.display = "block";
+  urlEntryView.style.display = "none";
   manualEntryView.style.display = "none";
   passwordEntryView.style.display = "none";
 }
@@ -187,6 +219,7 @@ function showAddView(editIndex = null) {
   editingIndex = editIndex;
   accountsView.style.display = "none";
   addAccountView.style.display = "none";
+  urlEntryView.style.display = "none";
   passwordEntryView.style.display = "none";
   manualEntryView.style.display = "block";
   algorithmView.style.display = "block";
@@ -225,6 +258,7 @@ function showAddView(editIndex = null) {
 function showAccountsView() {
   editingIndex = null;
   addAccountView.style.display = "none";
+  urlEntryView.style.display = "none";
   accountsView.style.display = "flex";
   manualEntryView.style.display = "none";
   passwordEntryView.style.display = "none";
