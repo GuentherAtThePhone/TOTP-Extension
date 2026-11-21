@@ -50,9 +50,7 @@ changePwBtn.addEventListener('click', async () => {
 });
 
 useMasterPasswordSelect.addEventListener('change', () => {
-    if(useMasterPasswordSelect.value === "true"){
-        changePwBtn.style.display = "block";
-    }else{
+    if(useMasterPasswordSelect.value === "false"){
         changePwBtn.style.display = "none";
     }
     useMasterPasswordChanged = true;
@@ -98,6 +96,7 @@ browser.storage.local.get("settings").then(async result => {
 });
 
 async function saveSettings(){
+
     var settings = new Settings(
         themeSelect.value,
         fontSizeSelect.value,
@@ -106,6 +105,37 @@ async function saveSettings(){
         showServiceImagesSelect.value === "true",
         allowRemoteImagesSelect.value === "true",
     );
+
+    if(useMasterPasswordChanged){
+        var result = await browser.storage.local.get("masterPasswordEnabled");
+        if(settings.masterPasswordEnabled && !result.masterPasswordEnabled){ // Masterpassword got  activated
+            const password = prompt(browser.i18n.getMessage('enterNewPasswordText'));
+            if(password){
+                await changePassword(undefined, password);
+                changePwBtn.style.display = "block";
+            }else{
+                settings.masterPasswordEnabled = false;
+                useMasterPasswordSelect.value = "false";
+            }
+        }else{ // Masterpassword got deactivated
+            const sessionKey = await getSessionPassword();
+            const accounts = await loadAccounts(sessionKey);
+            await browser.storage.local.set({ accounts, masterPasswordEnabled: false });
+            await browser.storage.local.remove("masterPassword");
+            await browser.storage.session.remove(["isAuthenticated", "sessionKey", "sessionPassword"]);
+        }
+    }
+
+    settings = new Settings(
+        themeSelect.value,
+        fontSizeSelect.value,
+        showNextCodeSelect.value === "true",
+        useMasterPasswordSelect.value === "true",
+        showServiceImagesSelect.value === "true",
+        allowRemoteImagesSelect.value === "true",
+    );
+
+    await browser.storage.local.set({settings});
 
     if(await isDarkMode()){
         document.body.classList.add("dark");   // Dark
@@ -127,25 +157,4 @@ async function saveSettings(){
         default:
         break;
     }
-
-    if(useMasterPasswordChanged){
-        var result = await browser.storage.local.get("masterPasswordEnabled");
-        if(settings.masterPasswordEnabled && !result.masterPasswordEnabled){ // Masterpassword got  activated
-            const password = prompt(browser.i18n.getMessage('enterNewPasswordText'));
-            if(password){
-                await changePassword(undefined, password);
-            }else{
-                settings.masterPasswordEnabled = false;
-                useMasterPasswordSelect.value = "false";
-            }
-        }else{ // Masterpassword got deactivated
-            const sessionKey = await getSessionPassword();
-            const accounts = await loadAccounts(sessionKey);
-            await browser.storage.local.set({ accounts, masterPasswordEnabled: false });
-            await browser.storage.local.remove("masterPassword");
-            await browser.storage.session.remove(["isAuthenticated", "sessionKey", "sessionPassword"]);
-        }
-    }
-
-    await browser.storage.local.set({settings});
 }
