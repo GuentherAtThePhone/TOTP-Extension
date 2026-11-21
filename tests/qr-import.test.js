@@ -239,7 +239,7 @@ describe('QR-Code Bildimport', () => {
       expect(acc.secret).toBe('JBSWY3DPEHPK3PXP');
       expect(acc.issuer).toBe('GitHub');
       expect(acc.account).toBe('octocat');
-      expect(acc.type).toBe('totp');
+      expect(acc.type).toBe('TOTP');
       expect(acc.digits).toBe(6);
       expect(acc.period).toBe(30);
       expect(acc.algorithm).toBe('SHA-1');
@@ -255,7 +255,7 @@ describe('QR-Code Bildimport', () => {
       expect(acc.digits).toBe(6);       // Default
       expect(acc.period).toBe(30);      // Default
       expect(acc.algorithm).toBe('SHA-1'); // Default
-      expect(acc.type).toBe('totp');
+      expect(acc.type).toBe('TOTP');
     });
 
     it('sollte einen TOTP-Account mit SHA-256 und 8 Ziffern parsen', async () => {
@@ -273,7 +273,7 @@ describe('QR-Code Bildimport', () => {
       const acc = await parseOtpauth(uri);
 
       expect(acc).toBeDefined();
-      expect(acc.type).toBe('hotp');
+      expect(acc.type).toBe('HOTP');
       expect(acc.counter).toBe(7);
       expect(acc.period).toBe(0);
     });
@@ -300,28 +300,28 @@ describe('QR-Code Bildimport', () => {
         mockedQR: 'otpauth://totp/GitHub:octocat?secret=JBSWY3DPEHPK3PXP&issuer=GitHub&digits=6&period=30',
         expectedSecret: 'JBSWY3DPEHPK3PXP',
         expectedIssuer: 'GitHub',
-        expectedType: 'totp'
+        expectedType: 'TOTP'
       },
       {
         file: 'qrcode(1).png',
         mockedQR: 'otpauth://totp/Google:user@gmail.com?secret=HXDMVJECJJWSRB3H&issuer=Google&digits=6&period=30',
         expectedSecret: 'HXDMVJECJJWSRB3H',
         expectedIssuer: 'Google',
-        expectedType: 'totp'
+        expectedType: 'TOTP'
       },
       {
         file: 'qrcode(2).png',
         mockedQR: 'otpauth://totp/Microsoft:user@outlook.com?secret=MFRA2YTBMJPXIY3U&issuer=Microsoft&digits=6&period=30',
         expectedSecret: 'MFRA2YTBMJPXIY3U',
         expectedIssuer: 'Microsoft',
-        expectedType: 'totp'
+        expectedType: 'TOTP'
       },
       {
         file: 'qrcode(3).png',
         mockedQR: 'otpauth://hotp/Bank:alice@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Bank&counter=0',
         expectedSecret: 'JBSWY3DPEHPK3PXP',
         expectedIssuer: 'Bank',
-        expectedType: 'hotp'
+        expectedType: 'HOTP'
       }
     ];
 

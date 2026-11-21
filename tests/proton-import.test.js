@@ -172,7 +172,7 @@ describe('Proton Authenticator Backup Import', () => {
       expect(acc.algorithm).toBe('SHA-512');
       expect(acc.digits).toBe(8);
       expect(acc.period).toBe(30);
-      expect(acc.type).toBe('totp');
+      expect(acc.type).toBe('TOTP');
       expect(acc.secret).toBe('3AIHD4T7JSFK3GOTD4JFQFYZ2HY2RXWRV6F43DGNTEHUNCZCY3E2M5EXON673V6VRCB6YO66PKRFBYX4WCVWSCLRBQ53SGJAZ5OD7LA');
     });
 
@@ -183,7 +183,7 @@ describe('Proton Authenticator Backup Import', () => {
       expect(acc.algorithm).toBe('SHA-512');
       expect(acc.digits).toBe(6);
       expect(acc.period).toBe(30);
-      expect(acc.type).toBe('totp');
+      expect(acc.type).toBe('TOTP');
     });
 
     it('Account 3 – UserAccount: sollte korrekte Felder haben (SHA-256, 6 Ziffern, 60s)', () => {
@@ -193,7 +193,7 @@ describe('Proton Authenticator Backup Import', () => {
       expect(acc.algorithm).toBe('SHA-256');
       expect(acc.digits).toBe(6);
       expect(acc.period).toBe(60);
-      expect(acc.type).toBe('totp');
+      expect(acc.type).toBe('TOTP');
     });
 
     it('Account 4 – AccountTest: sollte korrekte Felder haben (SHA-1, 8 Ziffern, 30s)', () => {
@@ -203,7 +203,7 @@ describe('Proton Authenticator Backup Import', () => {
       expect(acc.algorithm).toBe('SHA-1');
       expect(acc.digits).toBe(8);
       expect(acc.period).toBe(30);
-      expect(acc.type).toBe('totp');
+      expect(acc.type).toBe('TOTP');
     });
   });
 

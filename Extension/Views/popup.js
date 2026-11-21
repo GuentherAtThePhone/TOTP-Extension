@@ -228,7 +228,7 @@ function showAddView(editIndex = null) {
   if (editIndex !== null) {
     const acc = accounts[editIndex];
 
-    if(acc.type === "HOTP"){
+    if(isHOTP(acc)){
       algorithmView.style.display = "none";
       periodView.style.display = "none";
     }
@@ -267,6 +267,10 @@ function showAccountsView() {
 
 function openEdit(index) {
   showAddView(index);
+}
+
+function isHOTP(account) {
+  return String(account.type).toUpperCase() === "HOTP";
 }
 
 function getDragAfterElement(container, y) {
@@ -462,7 +466,7 @@ async function renderAccounts() {
     left.appendChild(logoEl);
     left.appendChild(content);
 
-    if(acc.type === "HOTP"){
+    if(isHOTP(acc)){
       const nextCounterBtn = document.createElement("button");
       nextCounterBtn.className = "edit-btn";
       nextCounterBtn.textContent = "⟳";
@@ -503,7 +507,7 @@ async function updateCodes() {
     const el = accountElements.get(index);
     if (!el) continue;
 
-    if(acc.type === "HOTP"){
+    if(isHOTP(acc)){
       const hotpCode = await generateHOTP(acc.secret, acc.counter, acc.digits);
       if(el.codeEl.textContent !== hotpCode){
         el.codeEl.textContent = hotpCode;

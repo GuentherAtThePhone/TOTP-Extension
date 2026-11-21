@@ -144,7 +144,8 @@ async function parseOtpauth(uri) {
     try {
         const u = new URL(uri);
         if (u.protocol !== 'otpauth:') return null;
-        const type = u.hostname; // totp or hotp
+        const type = u.hostname.toUpperCase();
+        if (type !== 'TOTP' && type !== 'HOTP') return null;
         const path = decodeURIComponent(u.pathname).replace(/^\//, '');
         const label = path; // often "Issuer:Account"
         const params = Object.fromEntries(u.searchParams.entries());
@@ -162,8 +163,8 @@ async function parseOtpauth(uri) {
             Number(params.digits) || 6, 
             normalizeAlgo(params.algorithm) || 'SHA-1', 
             type, 
-            type === 'hotp' ? Number(params.counter) || 0 : undefined, 
-            Number(params.period || params.interval) || (type === 'hotp' ? 0 : 30),
+            type === 'HOTP' ? Number(params.counter) || 0 : undefined, 
+            Number(params.period || params.interval) || (type === 'HOTP' ? 0 : 30),
             params.image || params.imageUrl || params.icon
         );
 

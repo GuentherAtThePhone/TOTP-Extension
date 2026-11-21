@@ -68,7 +68,7 @@ describe('Converter & Import Utilities', () => {
       expect(acc.account).toBe('octocat');
       expect(acc.digits).toBe(6);
       expect(acc.algorithm).toBe('SHA-1');
-      expect(acc.type).toBe('totp');
+      expect(acc.type).toBe('TOTP');
       expect(acc.period).toBe(30);
       expect(acc.image).toBe('https://example.com/github.png');
     });
@@ -86,13 +86,18 @@ describe('Converter & Import Utilities', () => {
     });
 
     it('should parse HOTP URI with counter', async () => {
-      const uri = 'otpauth://hotp/Bank:alice@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Bank&counter=42';
+      const uri = 'otpauth://hotp/Example?secret=PB4XU&counter=42&issuer=example.com';
       const acc = await parseOtpauth(uri);
 
       expect(acc).toBeDefined();
-      expect(acc.type).toBe('hotp');
+      expect(acc.type).toBe('HOTP');
       expect(acc.counter).toBe(42);
       expect(acc.period).toBe(0);
+      expect(acc.issuer).toBe('example.com');
+    });
+
+    it('should reject unsupported OTP types', async () => {
+      expect(await parseOtpauth('otpauth://steam/Example?secret=PB4XU')).toBeNull();
     });
 
     it('should handle URL-encoded characters in account label', async () => {
