@@ -3,7 +3,7 @@
   --card: #ffffff;
   --text: #1e293b;
   --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --accent-hover: #7dc2ff;
   --border: #e2e8f0;
   --radius: 12px;
 
@@ -18,7 +18,7 @@ body.dark {
   --card: #1e293b;
   --text: #e2e8f0;
   --accent: #3b82f6;
-  --accent-hover: #2563eb;
+  --accent-hover: #7dc2ff;
   --border: #334155;
 }
 
