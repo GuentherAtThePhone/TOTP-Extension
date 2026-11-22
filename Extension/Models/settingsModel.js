@@ -5,13 +5,17 @@ class Settings{
     masterPasswordEnabled;
     showServiceImages;
     allowRemoteImages;
-    constructor(theme, fontSize, nextCode, masterPasswordEnabled, showServiceImages = true, allowRemoteImages = false){
+    showAccountUrlButton;
+    accountUrlClipboardTimeout;
+    constructor(theme, fontSize, nextCode, masterPasswordEnabled, showServiceImages = true, allowRemoteImages = false, showAccountUrlButton = true, accountUrlClipboardTimeout = 10){
         this.theme = theme;
         this.fontSize = fontSize;
         this.nextCode = nextCode;
         this.masterPasswordEnabled = masterPasswordEnabled;
         this.showServiceImages = showServiceImages;
         this.allowRemoteImages = allowRemoteImages;
+        this.showAccountUrlButton = showAccountUrlButton;
+        this.accountUrlClipboardTimeout = accountUrlClipboardTimeout;
     }
 }
 
@@ -29,6 +33,8 @@ async function createDefaultSettings(){
         result.masterPasswordEnabled,
         true,
         false,
+        true,
+        10,
     );
 
     await browser.storage.local.set({settings: settings});
@@ -61,6 +67,17 @@ async function isShowServiceImages(){
 async function isAllowRemoteImages(){
     var result = await browser.storage.local.get("settings");
     return !!(result.settings && result.settings.allowRemoteImages === true);
+}
+
+async function isShowAccountUrlButton(){
+    var result = await browser.storage.local.get("settings");
+    return !result.settings || result.settings.showAccountUrlButton !== false;
+}
+
+async function getAccountUrlClipboardTimeout(){
+    var result = await browser.storage.local.get("settings");
+    const timeout = Number(result.settings && result.settings.accountUrlClipboardTimeout);
+    return Number.isInteger(timeout) && timeout > 0 && timeout <= 3600 ? timeout : 10;
 }
 
 async function getFontSize(){

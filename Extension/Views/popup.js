@@ -42,7 +42,10 @@ var password;
 var showNextCode;
 var showServiceImages;
 var allowRemoteImages;
+var showAccountUrlButton;
+var accountUrlClipboardTimeout;
 let draggedElement = null;
+let fallbackClipboardCleanupTimeout = null;
 
 // ------------------ Button Event Listeners ------------------
 
@@ -273,6 +276,56 @@ function isHOTP(account) {
   return String(account.type).toUpperCase() === "HOTP";
 }
 
+async function copyAccountUrl(account, button) {
+  const url = accountToOtpAuthUrl(account);
+  if (!url) {
+    alert(browser.i18n.getMessage("accountUrlCopyFailedText"));
+    return;
+  }
+
+  try {
+    const clipboardPermissions = ["clipboardRead", "clipboardWrite"];
+    const granted = await browser.permissions.request({
+      permissions: clipboardPermissions
+    });
+    if (!granted) {
+      alert(browser.i18n.getMessage("clipboardPermissionRequiredText"));
+      return;
+    }
+
+    await navigator.clipboard.writeText(url);
+    let response;
+    try {
+      response = await browser.runtime.sendMessage({
+        type: "scheduleClipboardCleanup",
+        url,
+        timeoutMs: accountUrlClipboardTimeout * 1000
+      });
+    } catch (error) {
+      console.warn("Clipboard cleanup background is unavailable:", error);
+    }
+
+    if (!response || !response.scheduled) {
+      clearTimeout(fallbackClipboardCleanupTimeout);
+      fallbackClipboardCleanupTimeout = setTimeout(async () => {
+        try {
+          if (await navigator.clipboard.readText() === url) {
+            await navigator.clipboard.writeText("");
+          }
+        } catch (error) {
+          console.error("Failed to clear the account URL from the clipboard:", error);
+        }
+      }, accountUrlClipboardTimeout * 1000);
+    }
+
+    button.classList.add("copied");
+    setTimeout(() => button.classList.remove("copied"), 600);
+  } catch (error) {
+    console.error("Failed to copy the account URL:", error);
+    alert(browser.i18n.getMessage("accountUrlCopyFailedText"));
+  }
+}
+
 function getDragAfterElement(container, y) {
   const draggableElements = [...container.querySelectorAll(".account:not(.dragging)")];
 
@@ -422,6 +475,9 @@ async function renderAccounts() {
     const right = document.createElement("div");
     right.className = "account-right";
 
+    const actionButtons = document.createElement("div");
+    actionButtons.className = "account-actions";
+
     const content = document.createElement("div");
     content.className = "account-content";
 
@@ -479,7 +535,20 @@ async function renderAccounts() {
       right.appendChild(nextCounterBtn);
     }
 
-    right.appendChild(editBtn);
+    actionButtons.appendChild(editBtn);
+    if (showAccountUrlButton) {
+      const copyUrlBtn = document.createElement("button");
+      copyUrlBtn.className = "edit-btn copy-url-btn";
+      copyUrlBtn.textContent = "🔗";
+      copyUrlBtn.title = browser.i18n.getMessage("copyAccountUrlText");
+      copyUrlBtn.setAttribute("aria-label", browser.i18n.getMessage("copyAccountUrlText"));
+      copyUrlBtn.addEventListener("click", event => {
+        event.stopPropagation();
+        copyAccountUrl(acc, copyUrlBtn);
+      });
+      actionButtons.appendChild(copyUrlBtn);
+    }
+    right.appendChild(actionButtons);
 
     wrapper.appendChild(left);
     wrapper.appendChild(right);
@@ -625,6 +694,8 @@ browser.storage.session.get(["uiState"]).then(async result => {
   showNextCode = await isShowNextCode();
   showServiceImages = await isShowServiceImages();
   allowRemoteImages = await isAllowRemoteImages();
+  showAccountUrlButton = await isShowAccountUrlButton();
+  accountUrlClipboardTimeout = await getAccountUrlClipboardTimeout();
 
   password = await getSessionPassword();
   accounts = await loadAccounts(password);

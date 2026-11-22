@@ -73,6 +73,51 @@ describe('Converter & Import Utilities', () => {
       expect(acc.image).toBe('https://example.com/github.png');
     });
 
+    describe('accountToOtpAuthUrl()', () => {
+      it('should generate a standards-compatible TOTP URL from account details', () => {
+        const url = accountToOtpAuthUrl(new Account(
+          'Example user',
+          'PB4XU',
+          'example.com:user@example.com',
+          'user@example.com',
+          'example.com',
+          6,
+          'SHA-1',
+          'TOTP',
+          undefined,
+          30
+        ));
+
+        const parsed = new URL(url);
+        expect(parsed.protocol).toBe('otpauth:');
+        expect(parsed.hostname).toBe('totp');
+        expect(decodeURIComponent(parsed.pathname.slice(1))).toBe('example.com:user@example.com');
+        expect(parsed.searchParams.get('secret')).toBe('PB4XU');
+        expect(parsed.searchParams.get('issuer')).toBe('example.com');
+        expect(parsed.searchParams.get('period')).toBe('30');
+      });
+
+      it('should include the counter for HOTP accounts', () => {
+        const url = accountToOtpAuthUrl(new Account(
+          'Example',
+          'PB4XU',
+          'Example',
+          'Example',
+          'example.com',
+          6,
+          'SHA-1',
+          'HOTP',
+          42,
+          0
+        ));
+
+        const parsed = new URL(url);
+        expect(parsed.hostname).toBe('hotp');
+        expect(parsed.searchParams.get('counter')).toBe('42');
+        expect(parsed.searchParams.get('period')).toBeNull();
+      });
+    });
+
     it('should parse TOTP URI with custom parameters', async () => {
       const uri = 'otpauth://totp/CustomCorp:admin?secret=HXDMVJECJJWSRB3H&issuer=CustomCorp&algorithm=SHA256&digits=8&period=60';
       const acc = await parseOtpauth(uri);

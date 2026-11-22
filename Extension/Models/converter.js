@@ -175,6 +175,32 @@ async function parseOtpauth(uri) {
     }
 }
 
+function accountToOtpAuthUrl(account) {
+    const type = String(account.type).toUpperCase();
+    if ((type !== 'TOTP' && type !== 'HOTP') || !account.secret) return null;
+
+    const issuer = account.issuer || (account.label && account.label.includes(':')
+        ? account.label.split(':')[0]
+        : undefined);
+    const labelAccount = account.account || account.name || account.label || '';
+    const label = issuer ? issuer + ':' + labelAccount : labelAccount;
+    const params = new URLSearchParams({
+        secret: account.secret,
+        digits: String(Number(account.digits) || 6)
+    });
+
+    if (issuer) params.set('issuer', issuer);
+    if (account.algorithm) params.set('algorithm', String(account.algorithm).replace('-', ''));
+
+    if (type === 'HOTP') {
+        params.set('counter', String(Number(account.counter) || 0));
+    } else {
+        params.set('period', String(Number(account.period) || 30));
+    }
+
+    return 'otpauth://' + type.toLowerCase() + '/' + encodeURIComponent(label) + '?' + params.toString();
+}
+
 function normalizeAlgo(a) {
   if (!a) return null;
   a = String(a).toUpperCase().replace('-', '');

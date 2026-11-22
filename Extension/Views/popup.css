@@ -118,6 +118,14 @@ body {
 .account-right {
   display: flex;
   align-items: center;
+  gap: 4px;
+}
+
+.account-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Text Styles */
@@ -157,6 +165,9 @@ body {
 
 /* Edit Button (Icon Style) */
 .edit-btn {
+  width: auto;
+  margin: 0;
+  padding: 4px 6px;
   background: none;
   border: none;
   font-size: var(--largeText);
@@ -167,6 +178,10 @@ body {
 
 .edit-btn:hover {
   color: var(--accent);
+}
+
+.copy-url-btn.copied {
+  color: #00c853;
 }
 
 /* Form Elemente */

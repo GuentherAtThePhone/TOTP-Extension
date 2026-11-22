@@ -15,6 +15,16 @@
   "permissions": [
     "storage"
   ],
+  "optional_permissions": [
+    "clipboardRead",
+    "clipboardWrite"
+  ],
+  "background": {
+    "scripts": [
+      "clipboard-background.js"
+    ],
+    "service_worker": "clipboard-background.js"
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "authenticator@aldaror",

@@ -144,6 +144,21 @@
   "allowRemoteImagesText":{
     "message": "Bilder aus dem Internet laden erlauben"
   },
+  "showAccountUrlButtonText":{
+    "message": "Account-URL-Kopierbutton anzeigen"
+  },
+  "accountUrlClipboardTimeoutText":{
+    "message": "Zwischenablage nach (Sekunden) leeren"
+  },
+  "copyAccountUrlText":{
+    "message": "Account-URL kopieren"
+  },
+  "clipboardPermissionRequiredText":{
+    "message": "Zum Kopieren und automatischen Entfernen der Account-URL aus der aktuellen Zwischenablage wird der Zwischenablagen-Zugriff benötigt."
+  },
+  "accountUrlCopyFailedText":{
+    "message": "Die Account-URL konnte nicht in die Zwischenablage kopiert werden."
+  },
   "useMasterPasswordText":{
     "message": "Master Passwort Nutzen"
   },

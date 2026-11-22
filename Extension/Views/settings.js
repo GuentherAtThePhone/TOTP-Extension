@@ -3,7 +3,10 @@ const fontSizeSelect = document.getElementById("fontSizeSelect");
 const showNextCodeSelect = document.getElementById("showNextCodeSelect");
 const showServiceImagesSelect = document.getElementById("showServiceImagesSelect");
 const allowRemoteImagesSelect = document.getElementById("allowRemoteImagesSelect");
+const showAccountUrlButtonSelect = document.getElementById("showAccountUrlButtonSelect");
+const accountUrlClipboardTimeoutInput = document.getElementById("accountUrlClipboardTimeoutInput");
 const useMasterPasswordSelect = document.getElementById("useMasterPasswordSelect");
+const accountUrlClipboardTimeoutLabel = document.getElementById("accountUrlClipboardTimeoutLabel");
 
 const saveBtn = document.getElementById("saveBtn");
 const changePwBtn = document.getElementById("changePwBtn");
@@ -49,6 +52,16 @@ changePwBtn.addEventListener('click', async () => {
     await changePassword(oldKey, newPW);
 });
 
+showAccountUrlButtonSelect.addEventListener('change', () => {
+    if(showAccountUrlButtonSelect.value === "false"){
+        accountUrlClipboardTimeoutInput.style.display = "none";
+        accountUrlClipboardTimeoutLabel.style.display = "none";
+    }else {
+        accountUrlClipboardTimeoutInput.style.display = "block";
+        accountUrlClipboardTimeoutLabel.style.display = "block";
+    }
+});
+
 useMasterPasswordSelect.addEventListener('change', () => {
     if(useMasterPasswordSelect.value === "false"){
         changePwBtn.style.display = "none";
@@ -85,17 +98,26 @@ browser.storage.local.get("settings").then(async result => {
     if(!settings.masterPasswordEnabled){
         changePwBtn.style.display = "none";
     }
+
+    if(!settings.showAccountUrlButton){
+        accountUrlClipboardTimeoutInput.style.display = "none";
+        accountUrlClipboardTimeoutLabel.style.display = "none";
+    }
         
-    // TODO
     themeSelect.value = settings.theme;
     fontSizeSelect.value = settings.fontSize;
     showNextCodeSelect.value = settings.nextCode.toString();
     showServiceImagesSelect.value = (settings.showServiceImages !== false).toString();
     allowRemoteImagesSelect.value = (settings.allowRemoteImages === true).toString();
+    showAccountUrlButtonSelect.value = (settings.showAccountUrlButton !== false).toString();
+    accountUrlClipboardTimeoutInput.value = await getAccountUrlClipboardTimeout();
     useMasterPasswordSelect.value = settings.masterPasswordEnabled.toString();
 });
 
 async function saveSettings(){
+    if(!accountUrlClipboardTimeoutInput.reportValidity()){
+        return;
+    }
 
     var settings = new Settings(
         themeSelect.value,
@@ -104,6 +126,8 @@ async function saveSettings(){
         useMasterPasswordSelect.value === "true",
         showServiceImagesSelect.value === "true",
         allowRemoteImagesSelect.value === "true",
+        showAccountUrlButtonSelect.value === "true",
+        Number(accountUrlClipboardTimeoutInput.value),
     );
 
     if(useMasterPasswordChanged){
@@ -133,6 +157,8 @@ async function saveSettings(){
         useMasterPasswordSelect.value === "true",
         showServiceImagesSelect.value === "true",
         allowRemoteImagesSelect.value === "true",
+        showAccountUrlButtonSelect.value === "true",
+        Number(accountUrlClipboardTimeoutInput.value),
     );
 
     await browser.storage.local.set({settings});
