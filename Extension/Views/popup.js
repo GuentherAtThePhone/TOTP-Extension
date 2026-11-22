@@ -510,6 +510,8 @@ async function renderAccounts() {
     const editBtn = document.createElement("button");
     editBtn.className = "edit-btn";
     editBtn.textContent = "✎";
+    editBtn.title = browser.i18n.getMessage("editAccountText");
+    editBtn.setAttribute("aria-label", browser.i18n.getMessage("editAccountText"));
     editBtn.addEventListener("click", () => openEdit(index));
 
     content.appendChild(nameEl);
@@ -526,6 +528,8 @@ async function renderAccounts() {
       const nextCounterBtn = document.createElement("button");
       nextCounterBtn.className = "edit-btn";
       nextCounterBtn.textContent = "⟳";
+      nextCounterBtn.title = browser.i18n.getMessage("refreshHOTPText");
+      nextCounterBtn.setAttribute("aria-label", browser.i18n.getMessage("refreshHOTPText"));
 
       nextCounterBtn.addEventListener("click", async () => {
         acc.counter++;

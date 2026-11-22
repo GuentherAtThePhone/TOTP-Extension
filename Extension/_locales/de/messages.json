@@ -29,6 +29,9 @@
   "editAccountText":{
     "message": "Account Bearbeiten"
   },
+  "refreshHOTPText":{
+    "message": "Nächsten HOTP-Code erzeugen"
+  },
   "algorithmText":{
     "message": "Algorithmus"
   }, 
