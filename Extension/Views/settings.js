@@ -11,8 +11,49 @@ const accountUrlClipboardTimeoutLabel = document.getElementById("accountUrlClipb
 const saveBtn = document.getElementById("saveBtn");
 const changePwBtn = document.getElementById("changePwBtn");
 const resetAddonBtn = document.getElementById("resetAddonBtn");
+const pendingChangesNotice = document.getElementById("pendingChangesNotice");
 
 var useMasterPasswordChanged = false;
+let savedSettingsSnapshot = null;
+
+function getSettingsSnapshot() {
+    return JSON.stringify({
+        theme: themeSelect.value,
+        fontSize: fontSizeSelect.value,
+        nextCode: showNextCodeSelect.value,
+        showServiceImages: showServiceImagesSelect.value,
+        allowRemoteImages: allowRemoteImagesSelect.value,
+        showAccountUrlButton: showAccountUrlButtonSelect.value,
+        accountUrlClipboardTimeout: accountUrlClipboardTimeoutInput.value,
+        masterPasswordEnabled: useMasterPasswordSelect.value
+    });
+}
+
+function updatePendingChangesNotice() {
+    if(savedSettingsSnapshot === null) return;
+    pendingChangesNotice.hidden = getSettingsSnapshot() === savedSettingsSnapshot;
+}
+
+function setSavedSettingsSnapshot() {
+    savedSettingsSnapshot = getSettingsSnapshot();
+    updatePendingChangesNotice();
+}
+
+const settingsControls = [
+    themeSelect,
+    fontSizeSelect,
+    showNextCodeSelect,
+    showServiceImagesSelect,
+    allowRemoteImagesSelect,
+    showAccountUrlButtonSelect,
+    accountUrlClipboardTimeoutInput,
+    useMasterPasswordSelect
+];
+
+settingsControls.forEach(control => {
+    control.addEventListener("input", updatePendingChangesNotice);
+    control.addEventListener("change", updatePendingChangesNotice);
+});
 
 const popup = document.getElementById("popupOverlay");
 const openBtn = document.getElementById("openPopup");
@@ -112,6 +153,8 @@ browser.storage.local.get("settings").then(async result => {
     showAccountUrlButtonSelect.value = (settings.showAccountUrlButton !== false).toString();
     accountUrlClipboardTimeoutInput.value = await getAccountUrlClipboardTimeout();
     useMasterPasswordSelect.value = settings.masterPasswordEnabled.toString();
+    useMasterPasswordChanged = false;
+    setSavedSettingsSnapshot();
 });
 
 async function saveSettings(){
@@ -183,4 +226,7 @@ async function saveSettings(){
         default:
         break;
     }
+
+    useMasterPasswordChanged = false;
+    setSavedSettingsSnapshot();
 }

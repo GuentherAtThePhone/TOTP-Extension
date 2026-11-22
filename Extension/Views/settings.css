@@ -90,6 +90,27 @@ h1 {
     margin-bottom: 25px;
 }
 
+.pending-changes {
+    margin: -10px 0 20px;
+    padding: 10px 12px;
+    border: 1px solid #d97706;
+    border-radius: 8px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: var(--smallText);
+    font-weight: 600;
+}
+
+.pending-changes[hidden] {
+    display: none;
+}
+
+body.dark .pending-changes {
+    border-color: #d97706;
+    background: #78350f;
+    color: #fde68a;
+}
+
 h2 {
     margin-top: 35px;
     font-size: var(--largeText);

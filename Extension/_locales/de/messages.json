@@ -29,6 +29,9 @@
   "editAccountText":{
     "message": "Account Bearbeiten"
   },
+  "pendingChangesText":{
+    "message": "Du hast nicht gespeicherte Änderungen."
+  },
   "refreshHOTPText":{
     "message": "Nächsten HOTP-Code erzeugen"
   },
