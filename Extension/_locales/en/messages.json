@@ -144,6 +144,21 @@
   "allowRemoteImagesText":{
     "message": "Allow loading images from the internet"
   },
+  "showAccountUrlButtonText":{
+    "message": "Show account URL copy button"
+  },
+  "accountUrlClipboardTimeoutText":{
+    "message": "Clipboard timeout (seconds)"
+  },
+  "copyAccountUrlText":{
+    "message": "Copy account URL"
+  },
+  "clipboardPermissionRequiredText":{
+    "message": "Clipboard access is required to copy and automatically clear the account URL from the current clipboard."
+  },
+  "accountUrlCopyFailedText":{
+    "message": "Could not copy the account URL to the clipboard."
+  },
   "useMasterPasswordText":{
     "message": "Use Masterpassword"
   },

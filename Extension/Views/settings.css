@@ -105,11 +105,18 @@ h2 {
     gap: 15px;
 }
 
+.setting-note {
+    margin: -8px 0 18px;
+    color: #64748b;
+    font-size: var(--smallText);
+}
+
 label {
     font-weight: 500;
 }
 
-select {
+select,
+input[type="number"] {
     padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid var(--border);
@@ -119,7 +126,8 @@ select {
     transition: 0.2s ease;
 }
 
-select:hover {
+select:hover,
+input[type="number"]:hover {
     border-color: var(--accent);
 }
 
@@ -171,6 +179,12 @@ body.dark select {
     background: #0f172a;
 }
 
+body.dark input[type="number"] {
+    background: #0f172a;
+    color: var(--text);
+    border-color: var(--border);
+}
+
 /* Secondary Button */
 .secondary {
     background: var(--border);
@@ -187,7 +201,8 @@ body.dark .secondary {
     align-items: flex-start;
     }
 
-    select {
+    select,
+    input[type="number"] {
     width: 100%;
     }
 

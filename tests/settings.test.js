@@ -17,6 +17,8 @@ describe('Settings Model & Preferences', () => {
       expect(s.masterPasswordEnabled).toBe(true);
       expect(s.showServiceImages).toBe(true);
       expect(s.allowRemoteImages).toBe(false);
+      expect(s.showAccountUrlButton).toBe(true);
+      expect(s.accountUrlClipboardTimeout).toBe(10);
     });
   });
 
@@ -31,6 +33,8 @@ describe('Settings Model & Preferences', () => {
       expect(settings.masterPasswordEnabled).toBe(false);
       expect(settings.showServiceImages).toBe(true);
       expect(settings.allowRemoteImages).toBe(false);
+      expect(settings.showAccountUrlButton).toBe(true);
+      expect(settings.accountUrlClipboardTimeout).toBe(10);
 
       const stored = await browser.storage.local.get('settings');
       expect(stored.settings.theme).toBe('default');
@@ -46,6 +50,22 @@ describe('Settings Model & Preferences', () => {
 
       await browser.storage.local.set({ settings: { showServiceImages: true } });
       expect(await isAllowRemoteImages()).toBe(false);
+    });
+
+    it('should default account URL copy controls to visible with a ten-second clipboard timeout', async () => {
+      expect(await isShowAccountUrlButton()).toBe(true);
+      expect(await getAccountUrlClipboardTimeout()).toBe(10);
+
+      await browser.storage.local.set({
+        settings: { showAccountUrlButton: false, accountUrlClipboardTimeout: 45 }
+      });
+      expect(await isShowAccountUrlButton()).toBe(false);
+      expect(await getAccountUrlClipboardTimeout()).toBe(45);
+
+      await browser.storage.local.set({
+        settings: { accountUrlClipboardTimeout: 3601 }
+      });
+      expect(await getAccountUrlClipboardTimeout()).toBe(10);
     });
 
     describe('isDarkMode()', () => {
