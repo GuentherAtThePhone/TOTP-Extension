@@ -3,16 +3,15 @@
 ## What:
 
 You can contribute pretty much any thing you like.
-It can be a new feature, a bug fix, a rework of existing code, or even a requst for a new feature.
-Make shure to also take a look at [TODO.md](/TODO.md).
+It can be a new feature, a bug fix or a rework of existing code.
+Want to contribute but dont know what to do? Take a look at [TODO.md](/TODO.md).
 
 ## How To:
 
-If you want to contribute to this repository, please follow these guidelines:
-
-1. Create an Issue with a description of your new feature / bugfix and tell us all about it
-2. Make shure not just your fix/change but also everything else still works
-3. Create a pull request and tell us what you´ve done. Make shure to answer any occuring questions within a reasonable time.
+1. Create an Issue with a description of your new feature and tell us all about it, so we can discuss design choices. (Just making a bugfix? Feel free to skip this step.)
+2. Fork the repository and write your change there.
+3. Make shure not just your fix / feature but also everything else still works ;)
+4. Create a pull request and tell us what you´ve done. Make sure to subscribe to the PR´s notifications, so you can answer any occuring questions within a reasonable time.
 
 ### Notes:
-* If you use inappropriate words in your Issue, the maintainer holds the right to close the Issue.
+* Please make sure your contribution is consistant with the projects philosophie.
