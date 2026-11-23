@@ -1,6 +1,6 @@
 {
   "name": "totp-authenticator-extension",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Multi-account offline TOTP/HOTP browser extension",
   "scripts": {
     "test": "node tests/run-node.js"
