@@ -179,5 +179,8 @@
   },
   "resetAddonBtnText":{
     "message" : "Addon zurücksetzen"
+  },
+  "confirmResetAddonText":{
+    "message" : "Möchtest du das Addon wirklich zurücksetzen? Alle gespeicherten Accounts und Einstellungen werden gelöscht."
   }
 }

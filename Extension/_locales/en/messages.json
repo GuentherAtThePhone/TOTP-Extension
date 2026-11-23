@@ -179,5 +179,8 @@
   },
   "resetAddonBtnText":{
     "message" : "Reset addon"
+  },
+  "confirmResetAddonText":{
+    "message" : "Do you really want to reset the addon? All saved accounts and settings will be deleted."
   }
 }

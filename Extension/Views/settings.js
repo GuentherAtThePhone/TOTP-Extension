@@ -74,6 +74,9 @@ popup.addEventListener("click", (e) => {
 });
 
 resetAddonBtn.addEventListener("click", async () => {
+    const confirmed = confirm(browser.i18n.getMessage("confirmResetAddonText"));
+    if (!confirmed) return;
+
     await saveAccounts([], await getSessionPassword()); // Reset saved Accounts
     await createDefaultSettings();
     window.close();
