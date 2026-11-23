@@ -56,6 +56,10 @@ describe('Settings Model & Preferences', () => {
       expect(await isShowAccountUrlButton()).toBe(true);
       expect(await getAccountUrlClipboardTimeout()).toBe(10);
 
+      await browser.storage.local.set({ settings: { theme: 'dark' } });
+      expect(await isShowAccountUrlButton()).toBe(true);
+      expect(await getAccountUrlClipboardTimeout()).toBe(10);
+
       await browser.storage.local.set({
         settings: { showAccountUrlButton: false, accountUrlClipboardTimeout: 45 }
       });

@@ -96,7 +96,7 @@ changePwBtn.addEventListener('click', async () => {
     await changePassword(oldKey, newPW);
 });
 
-showAccountUrlButtonSelect.addEventListener('change', () => {
+function updateAccountUrlClipboardTimeoutVisibility() {
     if(showAccountUrlButtonSelect.value === "false"){
         accountUrlClipboardTimeoutInput.style.display = "none";
         accountUrlClipboardTimeoutLabel.style.display = "none";
@@ -104,7 +104,9 @@ showAccountUrlButtonSelect.addEventListener('change', () => {
         accountUrlClipboardTimeoutInput.style.display = "block";
         accountUrlClipboardTimeoutLabel.style.display = "block";
     }
-});
+}
+
+showAccountUrlButtonSelect.addEventListener('change', updateAccountUrlClipboardTimeoutVisibility);
 
 useMasterPasswordSelect.addEventListener('change', () => {
     if(useMasterPasswordSelect.value === "false"){
@@ -143,17 +145,13 @@ browser.storage.local.get("settings").then(async result => {
         changePwBtn.style.display = "none";
     }
 
-    if(!settings.showAccountUrlButton){
-        accountUrlClipboardTimeoutInput.style.display = "none";
-        accountUrlClipboardTimeoutLabel.style.display = "none";
-    }
-        
     themeSelect.value = settings.theme;
     fontSizeSelect.value = settings.fontSize;
     showNextCodeSelect.value = settings.nextCode.toString();
     showServiceImagesSelect.value = (settings.showServiceImages !== false).toString();
     allowRemoteImagesSelect.value = (settings.allowRemoteImages === true).toString();
     showAccountUrlButtonSelect.value = (settings.showAccountUrlButton !== false).toString();
+    updateAccountUrlClipboardTimeoutVisibility();
     accountUrlClipboardTimeoutInput.value = await getAccountUrlClipboardTimeout();
     useMasterPasswordSelect.value = settings.masterPasswordEnabled.toString();
     useMasterPasswordChanged = false;
