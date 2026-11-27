@@ -197,9 +197,17 @@ async function processQRCode(qrResult) {
 }
 
 async function finishImport(importedAccounts) {
-  const updatedAccounts = [...accounts, ...importedAccounts];
-  await saveAccounts(updatedAccounts, password);
-  accounts = updatedAccounts;
-  alert(browser.i18n.getMessage("importSuccessfullText").replace("\"{accs.length}\"", importedAccounts.length));
+  const result = mergeImportedAccounts(accounts, importedAccounts);
+  await saveAccounts(result.accounts, password);
+  accounts = result.accounts;
+
+  let message = browser.i18n.getMessage("importSuccessfullText")
+    .replace("\"{accs.length}\"", result.imported.length);
+  if (result.skipped > 0) {
+    message += " " + browser.i18n.getMessage("importDuplicatesSkippedText")
+      .replace("\"{accs.length}\"", result.skipped)
+      .replace("{accs.length}", result.skipped);
+  }
+  alert(message);
   window.close();
 }

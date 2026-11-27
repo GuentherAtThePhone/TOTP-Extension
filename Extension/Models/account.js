@@ -80,6 +80,65 @@ function normalizeAccounts(accounts) {
   });
 }
 
+function getAccountDuplicateKey(account) {
+  if (!account || typeof account.secret !== "string" || !account.secret.trim()) {
+    return null;
+  }
+
+  const type = String(account.type || "").trim().toUpperCase();
+  const secret = account.secret
+    .trim()
+    .replace(/[\s-]/g, "")
+    .replace(/=+$/, "")
+    .toUpperCase();
+  const algorithm = String(account.algorithm || "SHA-1")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]/g, "");
+  const digits = Number(account.digits) || 6;
+  const keyParts = [type, secret, algorithm, digits];
+
+  if (type === "HOTP") {
+    const counter = account.counter == null ? 0 : Number(account.counter);
+    keyParts.push(Number.isFinite(counter) ? counter : 0);
+  } else if (type === "TOTP") {
+    const period = account.period == null ? 30 : Number(account.period);
+    keyParts.push(Number.isFinite(period) ? period : 30);
+  }
+
+  return keyParts.join("|");
+}
+
+function mergeImportedAccounts(existingAccounts, importedAccounts) {
+  const knownKeys = new Set();
+
+  for (const account of existingAccounts || []) {
+    const key = getAccountDuplicateKey(account);
+    if (key !== null) {
+      knownKeys.add(key);
+    }
+  }
+
+  const uniqueImportedAccounts = [];
+  for (const account of importedAccounts || []) {
+    const key = getAccountDuplicateKey(account);
+    if (key !== null && knownKeys.has(key)) {
+      continue;
+    }
+
+    uniqueImportedAccounts.push(account);
+    if (key !== null) {
+      knownKeys.add(key);
+    }
+  }
+
+  return {
+    accounts: [...(existingAccounts || []), ...uniqueImportedAccounts],
+    imported: uniqueImportedAccounts,
+    skipped: (importedAccounts || []).length - uniqueImportedAccounts.length
+  };
+}
+
 async function saveAccounts(accounts, password) {
   accounts = normalizeAccounts(accounts);
   if(!password){

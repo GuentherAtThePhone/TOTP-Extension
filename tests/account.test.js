@@ -50,6 +50,123 @@ describe('Account Model & Storage', () => {
     });
   });
 
+  describe('Duplicate Account Detection', () => {
+    it('should ignore issuer, label and image but include the TOTP period', () => {
+      const existing = [new Account(
+        'JBSWY3DPEHPK3PXP',
+        'GitHub:user',
+        'user',
+        'GitHub',
+        6,
+        'SHA-1',
+        'totp',
+        undefined,
+        30
+      )];
+      const imported = [
+        new Account(
+          ' jbswy3dpehpk3pxp ',
+          'Different:other',
+          'other',
+          'Different',
+          6,
+          'SHA1',
+          'TOTP',
+          undefined,
+          30
+        ),
+        new Account(
+          'JBSWY3DPEHPK3PXP',
+          'Different:third',
+          'third',
+          'Different',
+          6,
+          'SHA-1',
+          'TOTP',
+          undefined,
+          60
+        )
+      ];
+
+      const result = mergeImportedAccounts(existing, imported);
+
+      expect(result.imported).toHaveLength(1);
+      expect(result.imported[0].period).toBe(60);
+      expect(result.skipped).toBe(1);
+      expect(result.accounts).toHaveLength(2);
+    });
+
+    it('should preserve duplicates that already exist in the vault', () => {
+      const existing = [
+        new Account('JBSWY3DPEHPK3PXP', 'First', undefined, undefined, 6, 'SHA-1', 'totp', undefined, 30),
+        new Account('JBSWY3DPEHPK3PXP', 'Second', undefined, undefined, 6, 'SHA-1', 'totp', undefined, 30)
+      ];
+
+      const result = mergeImportedAccounts(existing, []);
+
+      expect(result.accounts).toHaveLength(2);
+      expect(result.imported).toHaveLength(0);
+      expect(result.skipped).toBe(0);
+    });
+
+    it('should treat algorithm and digits as duplicate identity fields', () => {
+      const existing = [new Account(
+        'JBSWY3DPEHPK3PXP',
+        'One',
+        undefined,
+        undefined,
+        6,
+        'SHA-1',
+        'totp'
+      )];
+      const imported = [
+        new Account('JBSWY3DPEHPK3PXP', 'Two', undefined, undefined, 8, 'SHA-1', 'totp'),
+        new Account('JBSWY3DPEHPK3PXP', 'Three', undefined, undefined, 6, 'SHA-256', 'totp')
+      ];
+
+      const result = mergeImportedAccounts(existing, imported);
+
+      expect(result.imported).toHaveLength(2);
+      expect(result.skipped).toBe(0);
+      expect(result.accounts).toHaveLength(3);
+    });
+
+    it('should include the counter for HOTP duplicate identity', () => {
+      const existing = [new Account(
+        'JBSWY3DPEHPK3PXP',
+        'Bank:one',
+        'one',
+        'Bank',
+        6,
+        'SHA-1',
+        'hotp',
+        0
+      )];
+      const imported = [
+        new Account('JBSWY3DPEHPK3PXP', 'Bank:two', 'two', 'Bank', 6, 'SHA-1', 'hotp', 0),
+        new Account('JBSWY3DPEHPK3PXP', 'Bank:three', 'three', 'Bank', 6, 'SHA-1', 'HOTP', 7)
+      ];
+
+      const result = mergeImportedAccounts(existing, imported);
+
+      expect(result.imported).toHaveLength(1);
+      expect(result.imported[0].counter).toBe(7);
+      expect(result.skipped).toBe(1);
+    });
+
+    it('should remove duplicates that occur twice in the imported batch', () => {
+      const imported = [
+        new Account('JBSWY3DPEHPK3PXP', 'First', undefined, undefined, 6, 'SHA-1', 'totp'),
+        new Account('JBSWY3DPEHPK3PXP', 'Second', undefined, undefined, 6, 'SHA1', 'TOTP')
+      ];
+
+      const result = mergeImportedAccounts([], imported);
+
+      expect(result.imported).toHaveLength(1);
+      expect(result.skipped).toBe(1);
+    });
+  });
+
   describe('Account Storage (saveAccounts & loadAccounts)', () => {
     it('should preserve an imported image URL without requiring host permissions', async () => {
       const accountsList = [

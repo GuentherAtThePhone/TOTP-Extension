@@ -106,6 +106,9 @@
   "importSuccessfullText":{
     "message": "Import successfull! \"{accs.length}\" Account(s) imported."
   },
+  "importDuplicatesSkippedText":{
+    "message": "{accs.length} duplicate(s) skipped."
+  },
 
 
   "yes":{
