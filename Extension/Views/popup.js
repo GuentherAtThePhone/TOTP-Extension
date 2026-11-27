@@ -534,6 +534,10 @@ async function renderAccounts() {
 
     const timerEl = document.createElement("div");
     timerEl.className = "timer";
+    timerEl.setAttribute("role", "timer");
+    const timerValueEl = document.createElement("span");
+    timerValueEl.className = "timer-value";
+    timerEl.appendChild(timerValueEl);
 
     const editBtn = document.createElement("button");
     editBtn.className = "edit-btn";
@@ -547,14 +551,13 @@ async function renderAccounts() {
       content.appendChild(accountEl);
     content.appendChild(codeEl);
     content.appendChild(nextCodeEl);
-    content.appendChild(timerEl);
 
     left.appendChild(logoEl);
     left.appendChild(content);
 
     if(isHOTP(acc)){
       const nextCounterBtn = document.createElement("button");
-      nextCounterBtn.className = "edit-btn";
+      nextCounterBtn.className = "edit-btn hotp-next-btn";
       nextCounterBtn.textContent = "⟳";
       nextCounterBtn.title = browser.i18n.getMessage("refreshHOTPText");
       nextCounterBtn.setAttribute("aria-label", browser.i18n.getMessage("refreshHOTPText"));
@@ -581,6 +584,7 @@ async function renderAccounts() {
       });
       actionButtons.appendChild(copyUrlBtn);
     }
+    right.appendChild(timerEl);
     right.appendChild(actionButtons);
 
     wrapper.appendChild(left);
@@ -592,6 +596,7 @@ async function renderAccounts() {
       codeEl,
       nextCodeEl,
       timerEl,
+      timerValueEl,
       currentCode: "",
       nextCode: ""
     });
@@ -614,8 +619,10 @@ async function updateCodes() {
       if(el.codeEl.textContent !== hotpCode){
         el.codeEl.textContent = hotpCode;
       }
+      el.timerEl.style.display = "none";
       continue;
     }
+    el.timerEl.style.display = "";
 
     const period = Number(acc.period) || 30;
     const currentSlot = Math.floor(now / period);
@@ -651,7 +658,13 @@ async function updateCodes() {
       }
     }
     
-    el.timerEl.textContent = remaining + browser.i18n.getMessage("timeTillNextCode"); // Timer immer aktualisieren
+    el.timerValueEl.textContent = remaining;
+    const progress = (remaining / period) * 360;
+    el.timerEl.style.setProperty("--timer-progress", progress + "deg");
+    el.timerEl.setAttribute(
+      "aria-label",
+      remaining + " " + browser.i18n.getMessage("timeTillNextCode")
+    );
     
   }
 }

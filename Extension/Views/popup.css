@@ -159,8 +159,33 @@ body {
 }
 
 .timer {
+  --timer-progress: 360deg;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) var(--timer-progress), var(--border) 0);
+  color: var(--text);
   font-size: var(--smallText);
-  color: #94a3b8;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.timer::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--card);
+}
+
+.timer-value {
+  position: relative;
+  z-index: 1;
 }
 
 /* Edit Button (Icon Style) */
@@ -178,6 +203,19 @@ body {
 
 .edit-btn:hover {
   color: var(--accent);
+}
+
+.hotp-next-btn {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  line-height: 1;
 }
 
 .copy-url-btn.copied {
@@ -230,9 +268,6 @@ body.dark .next-code {
   color: #94a3b8;
 }
 
-body.dark .timer {
-  color: #64748b;
-}
 body.dark input,
 body.dark select {
   background: #0f172a;
