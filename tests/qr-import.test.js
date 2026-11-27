@@ -275,7 +275,7 @@ describe('QR-Code Bildimport', () => {
       expect(acc).toBeDefined();
       expect(acc.type).toBe('HOTP');
       expect(acc.counter).toBe(7);
-      expect(acc.period).toBe(0);
+      expect(acc.period).toBeUndefined();
     });
 
     it('sollte null zurückgeben für eine nicht-otpauth URI (z.B. normaler Link)', async () => {

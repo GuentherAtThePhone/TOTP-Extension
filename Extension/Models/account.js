@@ -1,31 +1,87 @@
+const accountFields = new Set([
+  "secret",
+  "label",
+  "account",
+  "issuer",
+  "digits",
+  "algorithm",
+  "type",
+  "counter",
+  "period",
+  "image"
+]);
+
+function normalizeAccount(account) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(account)) {
+    if (accountFields.has(key) && value !== undefined) {
+      normalized[key] = value;
+    }
+  }
+
+  if (typeof normalized.label === "string") {
+    const separator = normalized.label.indexOf(":");
+    if (separator !== -1) {
+      const labelIssuer = normalized.label.slice(0, separator);
+      if (normalized.issuer == null && labelIssuer) {
+        normalized.issuer = labelIssuer;
+      }
+      if (normalized.account == null) {
+        normalized.account = normalized.label.slice(separator + 1);
+      }
+    }
+  }
+
+  if (normalized.digits == null) {
+    normalized.digits = 6;
+  }
+  if (normalized.algorithm == null) {
+    normalized.algorithm = "SHA-1";
+  }
+  if (String(normalized.type || "").toUpperCase() !== "HOTP" && normalized.period == null) {
+    normalized.period = 30;
+  }
+
+  return normalized;
+}
+
 class Account {
-  name;
-  secret;
-  label;
-  account;
-  issuer;
-  digits;
-  algorithm;
-  type;
-  counter;
-  period;
-  image;
-  constructor(name, secret, label, account, issuer, digits, algorithm, type, counter, period, image) {
-    this.name = name;
-    this.secret = secret;
-    this.label = label;
-    this.account = account;
-    this.issuer = issuer;
-    this.digits = digits;
-    this.algorithm = algorithm;
-    this.type = type;
-    this.counter = counter;
-    this.period = period;
-    this.image = image;
+  constructor(secret, label, account, issuer, digits, algorithm, type, counter, period, image) {
+    Object.assign(this, normalizeAccount({
+      secret,
+      label,
+      account,
+      issuer,
+      digits,
+      algorithm,
+      type,
+      counter,
+      period,
+      image
+    }));
+  }
+
+  static from(account) {
+    return Object.assign(Object.create(Account.prototype), normalizeAccount(account));
   }
 }
 
+function createAccount(account) {
+  return Account.from(account);
+}
+
+function normalizeAccounts(accounts) {
+  return accounts.map(account => {
+    if (!account || typeof account !== "object") {
+      throw new TypeError("Each account must be an object");
+    }
+
+    return createAccount(account);
+  });
+}
+
 async function saveAccounts(accounts, password) {
+  accounts = normalizeAccounts(accounts);
   if(!password){
     await browser.storage.local.set({ accounts });
     return;
@@ -43,10 +99,13 @@ async function loadAccounts(password) {
   }
 
   if(Array.isArray(accounts)){
+    const normalizedAccounts = normalizeAccounts(accounts);
     if(password){
-      await saveAccounts(accounts, password);
+      await saveAccounts(normalizedAccounts, password);
+    } else if (JSON.stringify(normalizedAccounts) !== JSON.stringify(accounts)) {
+      await saveAccounts(normalizedAccounts, null);
     }
-    return accounts;
+    return normalizedAccounts;
   }
   if(!password){
     throw new Error("A master password is required to unlock the account vault");
@@ -55,7 +114,7 @@ async function loadAccounts(password) {
   const decrypted = accounts.version === 2
     ? await decrypt(accounts, password)
     : await loadLegacyAccounts(accounts);
-  const loadedAccounts = JSON.parse(decrypted);
+  const loadedAccounts = normalizeAccounts(JSON.parse(decrypted));
 
   if(accounts.version !== 2){
     const stagedCiphertext = await encrypt(JSON.stringify(loadedAccounts), password);
@@ -67,6 +126,8 @@ async function loadAccounts(password) {
     }
     await browser.storage.local.set({ accounts: accountsMigration });
     await browser.storage.local.remove("accountsMigration");
+  } else if (JSON.stringify(loadedAccounts) !== decrypted) {
+    await saveAccounts(loadedAccounts, password);
   }
   return loadedAccounts;
 }

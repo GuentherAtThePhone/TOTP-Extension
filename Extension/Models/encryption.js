@@ -167,7 +167,7 @@ async function setMasterPassword() {
     masterPasswordEnabled: true
   };
   if (Array.isArray(accounts)) {
-    updates.accounts = await encrypt(JSON.stringify(accounts), sessionKey);
+    updates.accounts = await encrypt(JSON.stringify(normalizeAccounts(accounts)), sessionKey);
   }
   await browser.storage.local.set(updates);
   await browser.storage.session.set({ isAuthenticated: true, sessionKey });

@@ -15,7 +15,8 @@ const addUrlAccountBtn = document.getElementById("addUrlAccount");
 const cancelUrlAddBtn = document.getElementById("cancelUrlAdd");
 
 const manualEntryView = document.getElementById("manualEntryView");
-const nameInput = document.getElementById("nameInput");
+const issuerInput = document.getElementById("issuerInput");
+const accountInput = document.getElementById("accountInput");
 const secretInput = document.getElementById("secretInput");
 const toggleSecretBtn = document.getElementById("toggleSecret");
 const digitsInput = document.getElementById("digitsInput");
@@ -129,7 +130,8 @@ deleteBtn.addEventListener("click", async () => {
   if (editingIndex !== null) {
     const acc = accounts[editingIndex];
     // Bestätigungsdialog
-    const confirmed = confirm(browser.i18n.getMessage("confirmDeleteAccountText").replace("{accName}", acc.name));
+    const accountName = acc.issuer || acc.account || acc.label || "";
+    const confirmed = confirm(browser.i18n.getMessage("confirmDeleteAccountText").replace("{accName}", accountName));
     if (!confirmed) return;
 
     accounts.splice(editingIndex, 1);
@@ -140,24 +142,48 @@ deleteBtn.addEventListener("click", async () => {
 });
 
 saveAccountBtn.addEventListener("click", async () => {
-  const name = nameInput.value.trim();
+  const issuer = issuerInput.value.trim();
+  const account = accountInput.value.trim();
   const secret = secretInput.value.trim();
   const digits = parseInt(digitsInput.value);
   const algorithm = algorithmInput.value;
   const period = parseInt(periodInput.value);
 
-  if (!name) return;
+  if (!issuer && !account) return;
   if (!secret && editingIndex === null) return;
 
   if (editingIndex !== null) {
     const acc = accounts[editingIndex];
-    acc.name = name;
+    if (issuer) {
+      acc.issuer = issuer;
+    } else {
+      delete acc.issuer;
+    }
+    if (account) {
+      acc.account = account;
+    } else {
+      delete acc.account;
+    }
+    if (Object.prototype.hasOwnProperty.call(acc, "label")) {
+      const label = issuer && account
+        ? issuer + ":" + account
+        : account || issuer;
+      if (label) {
+        acc.label = label;
+      } else {
+        delete acc.label;
+      }
+    }
     if (secret) acc.secret = secret;
     acc.digits = digits;
     acc.algorithm = algorithm;
-    acc.period = period;
+    if (isHOTP(acc)) {
+      delete acc.period;
+    } else {
+      acc.period = period;
+    }
   } else {
-    accounts.push(new Account(name, secret, name, name, undefined, digits, algorithm, 'TOTP', undefined, period));
+    accounts.push(new Account(secret, undefined, account || undefined, issuer || undefined, digits, algorithm, 'TOTP', undefined, period));
   }
 
   await saveAccounts(accounts, password);
@@ -236,7 +262,8 @@ function showAddView(editIndex = null) {
       periodView.style.display = "none";
     }
 
-    nameInput.value = acc.name;
+    issuerInput.value = acc.issuer || "";
+    accountInput.value = acc.account || acc.label || "";
     secretInput.value = acc.secret;
     digitsInput.value = acc.digits;
     algorithmInput.value = acc.algorithm || "SHA-1";
@@ -244,7 +271,8 @@ function showAddView(editIndex = null) {
     deleteBtn.style.display = "block";
     document.getElementById("newAccountLabel").textContent = browser.i18n.getMessage("editAccountText");
   } else {
-    nameInput.value = "";
+    issuerInput.value = "";
+    accountInput.value = "";
     secretInput.value = "";
     digitsInput.value = "6";
     algorithmInput.value = "SHA-1";
@@ -447,14 +475,14 @@ async function renderAccounts() {
 
     const logoEl = document.createElement("div");
     logoEl.className = "account-logo";
-    const serviceName = String(acc.issuer || acc.name || acc.label || "").trim();
+    const serviceName = String(acc.issuer || acc.label || acc.account || "").trim();
     const initials = serviceName.slice(0, 2).toUpperCase();
     const logoColors = getLogoColors(initials);
     logoEl.textContent = initials;
     logoEl.style.backgroundColor = logoColors.background;
     logoEl.style.color = logoColors.foreground;
     logoEl.setAttribute("role", "img");
-    logoEl.setAttribute("aria-label", serviceName || acc.name);
+    logoEl.setAttribute("aria-label", serviceName);
 
     const isDataImage = typeof acc.image === "string" &&
       /^data:image\/(?:avif|gif|jpeg|png|webp);base64,/i.test(acc.image);
@@ -481,13 +509,13 @@ async function renderAccounts() {
     const content = document.createElement("div");
     content.className = "account-content";
 
-    const nameEl = document.createElement("div");
-    nameEl.className = "name";
-    nameEl.textContent = acc.name;
+    const issuerEl = document.createElement("div");
+    issuerEl.className = "issuer";
+    issuerEl.textContent = serviceName;
 
-    const labelEL = document.createElement("div");
-    labelEL.className = "label";
-    labelEL.textContent = acc.label;
+    const accountEl = document.createElement("div");
+    accountEl.className = "label";
+    accountEl.textContent = String(acc.account || acc.label || "").trim();
 
     const codeEl = document.createElement("div");
     codeEl.className = "code";
@@ -514,9 +542,9 @@ async function renderAccounts() {
     editBtn.setAttribute("aria-label", browser.i18n.getMessage("editAccountText"));
     editBtn.addEventListener("click", () => openEdit(index));
 
-    content.appendChild(nameEl);
-    if(labelEL.textContent !== nameEl.textContent)
-      content.appendChild(labelEL);
+    content.appendChild(issuerEl);
+    if(accountEl.textContent !== issuerEl.textContent)
+      content.appendChild(accountEl);
     content.appendChild(codeEl);
     content.appendChild(nextCodeEl);
     content.appendChild(timerEl);
@@ -532,7 +560,8 @@ async function renderAccounts() {
       nextCounterBtn.setAttribute("aria-label", browser.i18n.getMessage("refreshHOTPText"));
 
       nextCounterBtn.addEventListener("click", async () => {
-        acc.counter++;
+        const counter = Number(acc.counter);
+        acc.counter = (Number.isFinite(counter) ? counter : 0) + 1;
         await saveAccounts(accounts, password);
       });
 
@@ -581,7 +610,7 @@ async function updateCodes() {
     if (!el) continue;
 
     if(isHOTP(acc)){
-      const hotpCode = await generateHOTP(acc.secret, acc.counter, acc.digits);
+      const hotpCode = await generateHOTP(acc.secret, acc.counter == null ? 0 : acc.counter, acc.digits);
       if(el.codeEl.textContent !== hotpCode){
         el.codeEl.textContent = hotpCode;
       }
@@ -635,7 +664,8 @@ function saveUIState() {
     editingIndex,
     draft: isAddView
       ? {
-        name: nameInput.value,
+        issuer: issuerInput.value,
+        account: accountInput.value,
         digits: digitsInput.value,
           algorithm: algorithmInput.value,
           period: periodInput.value
@@ -652,7 +682,8 @@ function restoreUIState(state) {
     showAddView(state.editingIndex);
 
     if (state.draft) {
-      nameInput.value = state.draft.name || "";
+      issuerInput.value = state.draft.issuer || "";
+      accountInput.value = state.draft.account || state.draft.name || "";
       secretInput.value = "";
       digitsInput.value = state.draft.digits || 6;
       algorithmInput.value = state.draft.algorithm || "SHA-1";
@@ -665,7 +696,7 @@ function restoreUIState(state) {
 
 // ------------------ Run At Start ------------------
 
-[nameInput, secretInput, digitsInput, algorithmInput, periodInput]
+[issuerInput, accountInput, secretInput, digitsInput, algorithmInput, periodInput]
   .forEach(input => {
     input.addEventListener("input", saveUIState);
     input.addEventListener("change", saveUIState);

@@ -10,24 +10,26 @@ async function parse2fas(str) {
   var accounts = [];
 
   accs.forEach(a => {
-    var acc = new Account(
-        a.name, 
-        a.secret, 
-        a.otp.label || a.name, 
-        a.otp.account || a.name, 
-        a.otp.issuer, 
-        Number(a.otp.digits) || 6, 
-        normalizeAlgo(a.otp.algorithm) || 'SHA-1', 
-        a.otp.tokenType, 
-        a.otp.tokenType === 'HOTP' ? Number(a.counter) || 0 : undefined, 
-        Number(a.otp.period || a.otp.interval) || (a.type === 'hotp' ? 0 : 30),
-        [a.image, a.imageUrl, a.icon].find(value => typeof value === 'string')
-    );
-    if(a.otp.tokenType !== "STEAM"){
+    const otp = a.otp || {};
+    const tokenType = otp.tokenType;
+    const period = optionalNumber(otp.period != null ? otp.period : otp.interval);
+    const acc = createAccount({
+      secret: a.secret,
+      label: otp.label,
+      account: otp.account,
+      issuer: otp.issuer,
+      digits: optionalNumber(otp.digits),
+      algorithm: normalizeAlgo(otp.algorithm) || undefined,
+      type: tokenType,
+      counter: tokenType === 'HOTP' ? optionalNumber(a.counter) : undefined,
+      period,
+      image: [a.image, a.imageUrl, a.icon].find(value => typeof value === 'string')
+    });
+    if(tokenType !== "STEAM"){
       accounts.push(acc);
     }
   });
-  return accounts;
+  return normalizeAccounts(accounts);
 }
 
 function base64Decode(str) {
@@ -96,14 +98,14 @@ async function parseJson(str) {
 
         const uris = importedAccounts.entries.map(entry => entry.content.uri);
         importedAccounts = [];
-        uris.forEach(async uri => {
+        for (const uri of uris) {
           try {
             const acc = await parseOtpauth(uri);
             if (acc) importedAccounts.push(acc);
           } catch (e) {
             console.warn('Failed to parse otpauth URI from ProtonAuth entry:', e);
           }
-        });
+        }
       }else if(importedAccounts.version && importedAccounts.salt && importedAccounts.content){
         // Trying to import encrypted protonauth
         window.alert("This seems to be an encrypted Proton Authenticator backup. Please use an unencrypted backup to import the accounts.");
@@ -112,7 +114,7 @@ async function parseJson(str) {
       }
     }
 
-    return importedAccounts;
+    return normalizeAccounts(importedAccounts);
   } catch (err) {
     console.error("error importing accounts:", err);
   }
@@ -127,7 +129,7 @@ function parseGoogleAuth(str) {
         const uris = parseOtpauthMigration(b64);
         if (!uris || !uris.length) throw new Error('Keine Accounts in Migration-Daten gefunden');
 
-        return uris; // [] if no acconts found, array of Account objects if found
+        return normalizeAccounts(uris);
 
     } catch (e) {
         console.error('error parsing google auth migration data:', e);
@@ -151,24 +153,26 @@ async function parseOtpauth(uri) {
         const params = Object.fromEntries(u.searchParams.entries());
         const secret = params.secret;
         if (!secret) return null;
-        const issuer = params.issuer || (label.includes(':') ? label.split(':')[0] : undefined);
-        const account = label.includes(':') ? label.split(':').slice(1).join(':') : label;
+        const labelIssuer = label.includes(':') ? label.slice(0, label.indexOf(':')) : undefined;
+        const issuer = params.issuer || labelIssuer;
+        const account = label.includes(':')
+            ? label.slice(label.indexOf(':') + 1)
+            : params.issuer
+                ? label
+                : undefined;
 
-        var acc = new Account(
-            issuer ? issuer + ' ' + account : label, 
-            secret, 
-            label, 
-            account, 
-            issuer, 
-            Number(params.digits) || 6, 
-            normalizeAlgo(params.algorithm) || 'SHA-1', 
-            type, 
-            type === 'HOTP' ? Number(params.counter) || 0 : undefined, 
-            Number(params.period || params.interval) || (type === 'HOTP' ? 0 : 30),
-            params.image || params.imageUrl || params.icon
-        );
-
-        return acc;
+        return createAccount({
+            secret,
+            label,
+            account,
+            issuer,
+            digits: optionalNumber(params.digits),
+            algorithm: normalizeAlgo(params.algorithm) || undefined,
+            type,
+            counter: type === 'HOTP' ? optionalNumber(params.counter) : undefined,
+            period: optionalNumber(params.period != null ? params.period : params.interval),
+            image: params.image || params.imageUrl || params.icon
+        });
     } catch (e) {
         console.error('Failed to parse otpauth URI:', e);
         return null;
@@ -179,10 +183,16 @@ function accountToOtpAuthUrl(account) {
     const type = String(account.type).toUpperCase();
     if ((type !== 'TOTP' && type !== 'HOTP') || !account.secret) return null;
 
-    const issuer = account.issuer || (account.label && account.label.includes(':')
-        ? account.label.split(':')[0]
-        : undefined);
-    const labelAccount = account.account || account.name || account.label || '';
+    const accountLabel = String(account.label || '');
+    const labelIssuer = accountLabel.includes(':')
+        ? accountLabel.slice(0, accountLabel.indexOf(':'))
+        : undefined;
+    const issuer = account.issuer || labelIssuer;
+    const labelAccount = account.account || (
+        issuer && labelIssuer === issuer
+            ? accountLabel.slice(labelIssuer.length + 1)
+            : accountLabel
+    );
     const label = issuer ? issuer + ':' + labelAccount : labelAccount;
     const params = new URLSearchParams({
         secret: account.secret,
@@ -190,7 +200,7 @@ function accountToOtpAuthUrl(account) {
     });
 
     if (issuer) params.set('issuer', issuer);
-    if (account.algorithm) params.set('algorithm', String(account.algorithm).replace('-', ''));
+    params.set('algorithm', String(account.algorithm || 'SHA-1').replace('-', ''));
 
     if (type === 'HOTP') {
         params.set('counter', String(Number(account.counter) || 0));
@@ -199,6 +209,12 @@ function accountToOtpAuthUrl(account) {
     }
 
     return 'otpauth://' + type.toLowerCase() + '/' + encodeURIComponent(label) + '?' + params.toString();
+}
+
+function optionalNumber(value) {
+    if (value == null || value === '') return undefined;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : undefined;
 }
 
 function normalizeAlgo(a) {
@@ -291,7 +307,7 @@ function parseOtpauthMigration(b64data) {
             p += li.length;
             const slen = li.value;
             const s = new TextDecoder().decode(msgBytes.subarray(p, p + slen));
-            acc.name = s;
+            acc.account = s;
             p += slen;
           } else if (f === 3 && w === 2) {
             const li = readVarint(msgBytes, p);
@@ -333,28 +349,19 @@ function parseOtpauthMigration(b64data) {
         const algMap = {1: 'SHA1', 2: 'SHA256', 3: 'SHA512', 4: 'SHA384'};
         const typeMap = {1: 'HOTP', 2: 'TOTP'};
         const digitsMap = {1: 6, 2: 8};
-        const algo = algMap[acc.algorithm] || 'SHA1';
-        const type = typeMap[acc.type] || 'TOTP';
-        const digits = digitsMap[acc.digits] || (acc.digits || 6);
+        const algo = acc.algorithm === undefined ? undefined : normalizeAlgo(algMap[acc.algorithm]);
+        const type = typeMap[acc.type];
+        const digits = digitsMap[acc.digits] || 6;
 
-        const issuer = acc.issuer || '';
-        const name = acc.name || '';
-        const label = issuer ? issuer + ':' + name : name;
-
-        var accSingle = new Account(
-            name, 
-            acc.secret,
-            label,
-            name,
-            issuer,
+        accounts.push(createAccount({
+            secret: acc.secret,
+            account: acc.account,
+            issuer: acc.issuer,
             digits,
-            normalizeAlgo(algo) || 'SHA-1',
+            algorithm: algo || undefined,
             type,
-            acc.counter,
-            30
-        );
-
-        accounts.push(accSingle);
+            counter: type === 'HOTP' ? acc.counter : undefined
+        }));
       } else {
         // skip other fields
         if (wt === 0) {

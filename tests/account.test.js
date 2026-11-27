@@ -11,7 +11,6 @@ describe('Account Model & Storage', () => {
   describe('Account Instantiation', () => {
     it('should correctly set all account properties', () => {
       const acc = new Account(
-        'GitHub user',
         'JBSWY3DPEHPK3PXP',
         'GitHub:user',
         'user',
@@ -23,7 +22,7 @@ describe('Account Model & Storage', () => {
         30
       );
 
-      expect(acc.name).toBe('GitHub user');
+      expect(acc.name).toBeUndefined();
       expect(acc.secret).toBe('JBSWY3DPEHPK3PXP');
       expect(acc.label).toBe('GitHub:user');
       expect(acc.account).toBe('user');
@@ -34,12 +33,27 @@ describe('Account Model & Storage', () => {
       expect(acc.counter).toBe(0);
       expect(acc.period).toBe(30);
     });
+
+    it('should omit absent optional fields while setting standard defaults', () => {
+      const acc = new Account('JBSWY3DPEHPK3PXP', undefined, undefined, undefined, undefined, undefined, 'HOTP');
+
+      expect(acc.secret).toBe('JBSWY3DPEHPK3PXP');
+      expect(acc.digits).toBe(6);
+      expect(acc.algorithm).toBe('SHA-1');
+      expect(acc.period).toBeUndefined();
+      expect(acc.label).toBeUndefined();
+      expect(acc.account).toBeUndefined();
+      expect(acc.issuer).toBeUndefined();
+      expect(acc.counter).toBeUndefined();
+      expect(acc.image).toBeUndefined();
+      expect(Object.keys(acc).sort()).toEqual(['algorithm', 'digits', 'secret', 'type']);
+    });
   });
 
   describe('Account Storage (saveAccounts & loadAccounts)', () => {
     it('should preserve an imported image URL without requiring host permissions', async () => {
       const accountsList = [
-        new Account('GitHub', 'JBSWY3DPEHPK3PXP', 'GitHub:user', 'user', 'GitHub', 6, 'SHA-1', 'totp', 0, 30, 'https://example.com/logo.png')
+        new Account('JBSWY3DPEHPK3PXP', 'GitHub:user', 'user', 'GitHub', 6, 'SHA-1', 'totp', 0, 30, 'https://example.com/logo.png')
       ];
 
       await saveAccounts(accountsList, null);
@@ -50,21 +64,21 @@ describe('Account Model & Storage', () => {
 
     it('should save and load accounts without encryption when password is null', async () => {
       const accountsList = [
-        new Account('Google', 'JBSWY3DPEHPK3PXP', 'Google:u', 'u', 'Google', 6, 'SHA-1', 'totp', 0, 30),
-        new Account('GitHub', 'HXDMVJECJJWSRB3H', 'GitHub:u', 'u', 'GitHub', 6, 'SHA-1', 'totp', 0, 30)
+        new Account('JBSWY3DPEHPK3PXP', 'Google:u', 'u', 'Google', 6, 'SHA-1', 'totp', 0, 30),
+        new Account('HXDMVJECJJWSRB3H', 'GitHub:u', 'u', 'GitHub', 6, 'SHA-1', 'totp', 0, 30)
       ];
 
       await saveAccounts(accountsList, null);
       const loaded = await loadAccounts(null);
 
       expect(loaded).toHaveLength(2);
-      expect(loaded[0].name).toBe('Google');
-      expect(loaded[1].name).toBe('GitHub');
+      expect(loaded[0].issuer).toBe('Google');
+      expect(loaded[1].issuer).toBe('GitHub');
     });
 
     it('should encrypt account data with a password-derived vault key', async () => {
       const accountsList = [
-        new Account('Proton', 'JBSWY3DPEHPK3PXP', 'Proton:u', 'u', 'Proton', 6, 'SHA-256', 'totp', 0, 30)
+        new Account('JBSWY3DPEHPK3PXP', 'Proton:u', 'u', 'Proton', 6, 'SHA-256', 'totp', 0, 30)
       ];
 
       const password = 'MyMasterKey123';
@@ -83,13 +97,23 @@ describe('Account Model & Storage', () => {
       // Verify decrypted accounts match original
       const decryptedAccounts = await loadAccounts(vaultKey);
       expect(decryptedAccounts).toHaveLength(1);
-      expect(decryptedAccounts[0].name).toBe('Proton');
+      expect(decryptedAccounts[0].issuer).toBe('Proton');
       expect(decryptedAccounts[0].secret).toBe('JBSWY3DPEHPK3PXP');
     });
 
     it('should migrate legacy vaults after successful password unlock', async () => {
       const accountsList = [
-        new Account('Legacy', 'JBSWY3DPEHPK3PXP', 'Legacy:user', 'user', 'Legacy', 6, 'SHA-1', 'totp', 0, 30)
+        {
+          name: 'Legacy user',
+          secret: 'JBSWY3DPEHPK3PXP',
+          label: 'Legacy:user',
+          issuer: 'Legacy',
+          digits: 6,
+          algorithm: 'SHA-1',
+          type: 'totp',
+          counter: 0,
+          period: 30
+        }
       ];
       const passwordRecord = await hash('LegacyPassword');
       const legacyCiphertext = await encrypt(JSON.stringify(accountsList), passwordRecord.hash);
@@ -105,8 +129,50 @@ describe('Account Model & Storage', () => {
       const stored = await browser.storage.local.get('accounts');
 
       expect(migrated[0].secret).toBe(accountsList[0].secret);
+      expect(migrated[0].account).toBe('user');
+      expect(migrated[0].name).toBeUndefined();
       expect(stored.accounts.version).toBe(2);
       await expect(decrypt(stored.accounts, passwordRecord.hash)).rejects.toThrow();
+    });
+
+    it('should discard legacy names and derive fields only from a label', async () => {
+      await browser.storage.local.set({
+        accounts: [{
+          name: 'Legacy user',
+          secret: 'JBSWY3DPEHPK3PXP',
+          label: 'Legacy:user',
+          issuer: 'Legacy'
+        }]
+      });
+
+      const loaded = await loadAccounts(null);
+      const stored = await browser.storage.local.get('accounts');
+
+      expect(loaded[0].account).toBe('user');
+      expect(loaded[0].name).toBeUndefined();
+      expect(stored.accounts[0].name).toBeUndefined();
+    });
+
+    it('should discard legacy names in an encrypted vault', async () => {
+      const passwordRecord = await saveMasterPassword('LegacyPassword');
+      const vaultKey = await deriveVaultKey('LegacyPassword', passwordRecord.vaultSalt);
+      const legacyAccounts = [{
+        name: 'Legacy user',
+        secret: 'JBSWY3DPEHPK3PXP',
+        label: 'Legacy:user',
+        issuer: 'Legacy'
+      }];
+      const encryptedAccounts = await encrypt(JSON.stringify(legacyAccounts), vaultKey);
+      await browser.storage.local.set({ accounts: encryptedAccounts });
+
+      const loaded = await loadAccounts(vaultKey);
+      const stored = await browser.storage.local.get('accounts');
+      const decryptedStored = JSON.parse(await decrypt(stored.accounts, vaultKey));
+
+      expect(loaded[0].account).toBe('user');
+      expect(loaded[0].name).toBeUndefined();
+      expect(decryptedStored[0].name).toBeUndefined();
+      expect(decryptedStored[0].account).toBe('user');
     });
 
     it('should require a key before loading an encrypted vault', async () => {
