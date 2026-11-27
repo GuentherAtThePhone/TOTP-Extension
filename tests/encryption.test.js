@@ -99,7 +99,7 @@ describe('Encryption & Master Password Authentication', () => {
       const oldKey = await deriveVaultKey(oldPassword, oldRecord.vaultSalt);
       await browser.storage.local.set({ masterPasswordEnabled: true });
       await saveAccounts([
-        new Account('Example', 'JBSWY3DPEHPK3PXP', 'Example:user', 'user', 'Example', 6, 'SHA-1', 'totp', 0, 30)
+        new Account('JBSWY3DPEHPK3PXP', 'Example:user', 'user', 'Example', 6, 'SHA-1', 'totp', 0, 30)
       ], oldKey);
 
       const newKey = await changePassword(oldKey, 'NewMasterPassword');

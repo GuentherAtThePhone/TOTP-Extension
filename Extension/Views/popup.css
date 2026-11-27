@@ -129,7 +129,7 @@ body {
 }
 
 /* Text Styles */
-.name {
+.issuer {
   font-weight: 600;
   font-size: var(--mediumText);
 }

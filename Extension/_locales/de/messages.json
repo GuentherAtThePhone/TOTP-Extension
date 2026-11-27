@@ -29,6 +29,12 @@
   "editAccountText":{
     "message": "Account Bearbeiten"
   },
+  "issuerFieldText":{
+    "message": "Issuer"
+  },
+  "accountFieldText":{
+    "message": "Account / Label"
+  },
   "pendingChangesText":{
     "message": "Du hast nicht gespeicherte Änderungen."
   },

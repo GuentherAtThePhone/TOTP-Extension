@@ -62,8 +62,9 @@ describe('Converter & Import Utilities', () => {
       const acc = await parseOtpauth(uri);
 
       expect(acc).toBeDefined();
-      expect(acc.name).toBe('GitHub octocat');
+      expect(acc instanceof Account).toBe(true);
       expect(acc.secret).toBe('JBSWY3DPEHPK3PXP');
+      expect(acc.name).toBeUndefined();
       expect(acc.issuer).toBe('GitHub');
       expect(acc.account).toBe('octocat');
       expect(acc.digits).toBe(6);
@@ -73,10 +74,20 @@ describe('Converter & Import Utilities', () => {
       expect(acc.image).toBe('https://example.com/github.png');
     });
 
+    it('should preserve a plain label and apply defaults when URI parameters are absent', async () => {
+      const acc = await parseOtpauth('otpauth://totp/UnqualifiedLabel?secret=JBSWY3DPEHPK3PXP');
+
+      expect(acc.label).toBe('UnqualifiedLabel');
+      expect(acc.account).toBeUndefined();
+      expect(acc.issuer).toBeUndefined();
+      expect(acc.digits).toBe(6);
+      expect(acc.algorithm).toBe('SHA-1');
+      expect(acc.period).toBe(30);
+    });
+
     describe('accountToOtpAuthUrl()', () => {
       it('should generate a standards-compatible TOTP URL from account details', () => {
         const url = accountToOtpAuthUrl(new Account(
-          'Example user',
           'PB4XU',
           'example.com:user@example.com',
           'user@example.com',
@@ -92,6 +103,8 @@ describe('Converter & Import Utilities', () => {
         expect(parsed.protocol).toBe('otpauth:');
         expect(parsed.hostname).toBe('totp');
         expect(decodeURIComponent(parsed.pathname.slice(1))).toBe('example.com:user@example.com');
+        expect(parsed.searchParams.get('digits')).toBe('6');
+        expect(parsed.searchParams.get('algorithm')).toBe('SHA1');
         expect(parsed.searchParams.get('secret')).toBe('PB4XU');
         expect(parsed.searchParams.get('issuer')).toBe('example.com');
         expect(parsed.searchParams.get('period')).toBe('30');
@@ -99,7 +112,6 @@ describe('Converter & Import Utilities', () => {
 
       it('should include the counter for HOTP accounts', () => {
         const url = accountToOtpAuthUrl(new Account(
-          'Example',
           'PB4XU',
           'Example',
           'Example',
@@ -116,6 +128,21 @@ describe('Converter & Import Utilities', () => {
         expect(parsed.searchParams.get('counter')).toBe('42');
         expect(parsed.searchParams.get('period')).toBeNull();
       });
+
+      it('should use the label as the account when no account field is set', () => {
+        const url = accountToOtpAuthUrl({
+          type: 'TOTP',
+          secret: 'PB4XU',
+          label: 'example.com:user@example.com',
+          issuer: 'example.com'
+        });
+
+        const parsed = new URL(url);
+        expect(decodeURIComponent(parsed.pathname.slice(1))).toBe('example.com:user@example.com');
+        expect(parsed.searchParams.get('digits')).toBe('6');
+        expect(parsed.searchParams.get('algorithm')).toBe('SHA1');
+        expect(parsed.searchParams.get('period')).toBe('30');
+      });
     });
 
     it('should parse TOTP URI with custom parameters', async () => {
@@ -123,7 +150,7 @@ describe('Converter & Import Utilities', () => {
       const acc = await parseOtpauth(uri);
 
       expect(acc).toBeDefined();
-      expect(acc.name).toBe('CustomCorp admin');
+      expect(acc.account).toBe('admin');
       expect(acc.issuer).toBe('CustomCorp');
       expect(acc.digits).toBe(8);
       expect(acc.algorithm).toBe('SHA-256');
@@ -137,7 +164,7 @@ describe('Converter & Import Utilities', () => {
       expect(acc).toBeDefined();
       expect(acc.type).toBe('HOTP');
       expect(acc.counter).toBe(42);
-      expect(acc.period).toBe(0);
+      expect(acc.period).toBeUndefined();
       expect(acc.issuer).toBe('example.com');
     });
 
@@ -198,11 +225,15 @@ describe('Converter & Import Utilities', () => {
 
       expect(accounts).toBeDefined();
       expect(accounts).toHaveLength(1);
-      expect(accounts[0].name).toBe('user@gmail.com');
+      expect(accounts[0] instanceof Account).toBe(true);
+      expect(accounts[0].account).toBe('user@gmail.com');
       expect(accounts[0].issuer).toBe('Google');
+      expect(accounts[0].label).toBeUndefined();
       expect(accounts[0].secret).toBe('JBSWY3DP');
       expect(accounts[0].digits).toBe(6);
+      expect(accounts[0].algorithm).toBe('SHA-1');
       expect(accounts[0].type).toBe('TOTP');
+      expect(accounts[0].period).toBe(30);
     });
 
     it('should parse full otpauth-migration:// URL via parseGoogleAuth()', () => {
@@ -212,6 +243,7 @@ describe('Converter & Import Utilities', () => {
 
       expect(accounts).toBeDefined();
       expect(accounts).toHaveLength(1);
+      expect(accounts[0] instanceof Account).toBe(true);
       expect(accounts[0].issuer).toBe('Google');
     });
 
@@ -250,7 +282,7 @@ describe('Converter & Import Utilities', () => {
 
       expect(accounts).toBeDefined();
       expect(accounts).toHaveLength(1); // Steam is filtered out
-      expect(accounts[0].name).toBe('GitHub');
+      expect(accounts[0] instanceof Account).toBe(true);
       expect(accounts[0].secret).toBe('JBSWY3DPEHPK3PXP');
       expect(accounts[0].account).toBe('octocat');
       expect(accounts[0].issuer).toBe('GitHub');
@@ -282,6 +314,25 @@ describe('Converter & Import Utilities', () => {
       expect(accounts[0].counter).toBe(5);
       expect(accounts[0].type).toBe('HOTP');
     });
+
+    it('should not derive missing fields from the 2FAS service name', async () => {
+      const accounts = await parse2fas(JSON.stringify({
+        services: [{
+          name: 'Display-only name',
+          secret: 'JBSWY3DPEHPK3PXP',
+          otp: { tokenType: 'TOTP' }
+        }]
+      }));
+
+      expect(accounts[0].name).toBeUndefined();
+      expect(accounts[0].label).toBeUndefined();
+      expect(accounts[0].account).toBeUndefined();
+      expect(accounts[0] instanceof Account).toBe(true);
+      expect(accounts[0].issuer).toBeUndefined();
+      expect(accounts[0].digits).toBe(6);
+      expect(accounts[0].algorithm).toBe('SHA-1');
+      expect(accounts[0].period).toBe(30);
+    });
   });
 
   describe('JSON & Proton Authenticator Import (parseJson)', () => {
@@ -290,10 +341,7 @@ describe('Converter & Import Utilities', () => {
         {
           name: 'Account 1',
           secret: 'JBSWY3DPEHPK3PXP',
-          digits: 6,
-          algorithm: 'SHA-1',
           type: 'totp',
-          period: 30,
           image: 'https://example.com/account.png'
         }
       ]);
@@ -301,9 +349,27 @@ describe('Converter & Import Utilities', () => {
       const accounts = await parseJson(rawJson);
       expect(accounts).toBeDefined();
       expect(accounts).toHaveLength(1);
-      expect(accounts[0].name).toBe('Account 1');
+      expect(accounts[0] instanceof Account).toBe(true);
+      expect(accounts[0].account).toBeUndefined();
+      expect(accounts[0].name).toBeUndefined();
       expect(accounts[0].secret).toBe('JBSWY3DPEHPK3PXP');
       expect(accounts[0].image).toBe('https://example.com/account.png');
+      expect(accounts[0].digits).toBe(6);
+      expect(accounts[0].algorithm).toBe('SHA-1');
+      expect(accounts[0].period).toBe(30);
+    });
+
+    it('should split an imported label when issuer and account are missing', async () => {
+      const accounts = await parseJson(JSON.stringify([{
+        secret: 'JBSWY3DPEHPK3PXP',
+        label: 'GitHub:octocat',
+        type: 'TOTP'
+      }]));
+
+      expect(accounts[0].label).toBe('GitHub:octocat');
+      expect(accounts[0] instanceof Account).toBe(true);
+      expect(accounts[0].issuer).toBe('GitHub');
+      expect(accounts[0].account).toBe('octocat');
     });
 
     it('should parse Proton Authenticator JSON format with entries', async () => {
@@ -321,6 +387,7 @@ describe('Converter & Import Utilities', () => {
       const accounts = await parseJson(protonJson);
       expect(accounts).toBeDefined();
       expect(accounts).toHaveLength(1);
+      expect(accounts[0] instanceof Account).toBe(true);
       expect(accounts[0].issuer).toBe('Proton');
       expect(accounts[0].account).toBe('user@pm.me');
     });

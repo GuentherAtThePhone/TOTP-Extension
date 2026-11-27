@@ -29,6 +29,12 @@
   "editAccountText":{
     "message": "Edit Account"
   },
+  "issuerFieldText":{
+    "message": "Issuer"
+  },
+  "accountFieldText":{
+    "message": "Account / Label"
+  },
   "pendingChangesText":{
     "message": "You have pending changes that have not been saved."
   },
